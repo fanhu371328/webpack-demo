@@ -1,0 +1,184 @@
+一、安装node
+
+二、创建package.json文件
+	npm init
+
+三、安装webpack
+	npm install webpack -g
+
+四、把webpack依赖写入package.json中
+	npm install webpack --save-dev
+	此时已经可以使用webpack命令打包js文件,打包命令 webpack app.js output.js,将app.js打包到output.js,注意这两个文件的路径要写对。
+	同一目录下要加./不能直接写文件名
+
+五、安装对应资源的加载器（webpack最终都是处理js文件）并写入package.json依赖
+	npm install css-loader style-loader --save-dev
+	用来处理css文件和样式
+	此时可以对css文件进行打包,但是在入口文件里依赖css文件时要加style!css! 如：require('style!css!../css/style.css')，后面会通过配置不需要再写这个
+
+六、设置配置文件webpack.config.js
+	----------------------------------------------------------------------
+	module.exports = {
+		entry: './app/index.js', //入口文件
+		output: {                //输出文件
+		    path: './out',
+		    filename: 'bund.js'  //打包之后的文件名
+		},
+	    module: {                 //模块处理器
+		    loaders: [            //加载器是个数组，里面每一项是个对象
+		      { test: /\.css$/,   //处理的文件类型
+		      	loader: 'style-loader!css-loader',  //要用到的加载器
+		      	exclude:'/node_modules/'            //要排除搜索的文件夹
+		      }
+		    ]
+		},
+		resolve:{     //自动补全后缀，在这里设置了之后前面依赖的文件后缀可以去掉
+		  	extensions:['','.js','.css','.jsx']
+		}
+	}
+	-----------------------------------------------------------------------
+
+	有了配置文件之后四和五中所有依赖的文件只写文件名和对应路径就行了，如：require('../css/style')
+
+七、服务 webpack-dev-server
+	安装：npm install webpack-dev-server -g
+
+	安装完成后添加到package.json的依赖
+	npm install webpack-dev-server --save-dev
+
+	1、webpack-dev-server          //开启服务,
+	2、webpack-dev-server --port 3000          //更换默认端口8080为3000，
+	3、webpack-dev-server --port 3000 --hot --inline    //更换端口并开启自动刷新
+
+	注意：我们在index.html中引入的打包之后的js文件，这时候要把路径全去掉，只留一个文件名就行
+	     如：<script src="./bund.js"></script>,即使这个bund.js文件在另一个文件夹下也要这么写，这时的localhost:3000/默认访问的目录是根目录，如果要修改目录可以在后面继续加参数  --content-base ./build/   这里的./build/ 就是你要设置的文件夹的路径，
+	     如 webpack-dev-server --port 3000 --hot --inline --content-base ./build/ ，同样的可以在下面进行配置，scripts中加入"build":"webpack-dev-server --port 3000 --hot --inline --content-base ./build/"
+
+	如果觉得上面这个命令太长了，那就在package.json中配置一下，在scripts中加入 "build":"webpack-dev-server --port 3000 --hot --inline"，这里的build是自己定义的名字，再运行的时候只需要敲入 npm run build 就可以了。当然，修改端口和自动刷新这个看你自己的需要了，如果不需要就去掉。
+	-----------------------------------------------------------
+	{
+	  "name": "webp",
+	  "version": "1.0.0",
+	  "description": "myfirstWebpackDemo",
+	  "main": "index.js",
+	  "scripts": {
+	    "test": "echo \"Error: no test specified\" && exit 1",
+	    "build":"webpack-dev-server --port 3000 --hot --inline"
+	  },
+	  "author": "fanhu",
+	  "license": "ISC",
+	  "devDependencies": {
+	    "css-loader": "^0.26.1",
+	    "style-loader": "^0.13.1",
+	    "webpack": "^1.14.0",
+	    "webpack-dev-server": "^1.16.2"
+	  }
+	}
+	---------------------------------------------------------
+	当我们不开启服务，直接通过webpack命令进行打包的时候，就会直接根据packages.json中配置的输出路径打包成要输出的js文件，当我们开启服务之后（包括自动打包刷新页面），这时候打包的文件并不是直接到了packages.json中配置的输出路径，而是在内存中，因为每一次都打包到文件的话对电脑开销是很大的，所以在关闭服务之后再通过webpack进行一次打包才能最终到文件中。
+
+八、自动生成html文件   html-webpack-plugin
+	安装依赖到package.json
+    npm install html-webpack-plugin --save-dev
+    到目前为止已经安装了下面几个依赖
+    -------------------------------------
+    "devDependencies": {
+        "css-loader": "^0.26.1",
+    	"html-webpack-plugin": "^2.24.1",
+    	"style-loader": "^0.13.1",
+    	"webpack": "^1.14.0",
+    	"webpack-dev-server": "^1.16.2"
+    }
+    --------------------------------------
+    上面我们把localhost:3000/的默认访问地址从根目录改到了 ./out/ 这个文件夹下，但是这个文件夹中并没有html文件，这时就需要我们自动生成一个了，在webpack.config.js中配置如下：
+   -----------------------------------------------------------------------------
+    var htmlWebpackPlugin = require('html-webpack-plugin');        //这里定义依赖
+	module.exports = {
+	  entry: './app/index.js', //入口文件
+	  output: {           //输出文件
+	    path: './out',    
+	    filename: 'bund.js' //打包之后的文件名
+	  },
+	  module: {           //模块处理器
+	    loaders: [        //加载器是个数组，里面每一项是个对象
+	      { test: /\.css$/,   //处理的文件类型
+	      	loader: 'style-loader!css-loader',  //要用到的加载器
+	      	exclude:'/node_modules/'     //要排除搜索的文件夹
+	      }
+	    ]
+	  },
+	  resolve:{     //自动补全后缀，在这里设置了之后前面依赖的文件后缀可以去掉
+	  	extensions:['','.js','.css','.jsx']
+	  },
+	  plugins:[
+	      new htmlWebpackPlugin({									//这里实例化对象
+	          title:"我是自动生成的html文件",
+	      })
+	  ]
+	}
+	---------------------------------------------------------------------------------
+	上面配置完成后，先打包在起服务  webpack  ===>  npm run build  这时在 ./out/ 文件夹下就多了一个html文件
+
+	同样的方法，我们可以生成多个html文件，只需要在 plugins 中分别设置
+	-----------------------------------------------------------------
+	plugins:[     //可以生成多个html文件，可以分别定义文件名和所依赖的模块
+      new htmlWebpackPlugin({
+          title:"我是自动生成的index.html文件",
+          filename:"index.html",
+          chunks:['bund']
+      }),
+      new htmlWebpackPlugin({
+          title:"我是自动生成的class.html文件",
+          filename:"class.html",     //这里定义要生成html的文件名
+          chunks:['abc']             //这里定义生成该文件依赖的模块
+      })
+    ]
+    ------------------------------------------------------------------
+    再次打包并启动服务，可以看到 ./out/文件夹中生成了两个html文件，并且每个文件中引入的js都是我们定义那个
+
+九、打包成多个文件（模块）
+
+	主要配置 webpack.config.js 中的入口文件和输出文件
+	------------------------------------------------------------------------------------------------------------------
+	//entry: './app/index.js', //入口文件  只打包一个js文件的时候可以写成字符串的形式，如果要打包成多个就用下面对象的形式
+
+	entry:{  //前面是要打包的文件名字，后面是入口文件的路径,然后下面output中输出的文件名要改成'[name].js' ，这样就会自动分别打包
+		bund:'./app/index.js',
+		abc:'./app/abc.js'
+	},
+	output: {           //输出文件
+	    path: './out',    
+	    filename: '[name].js' //打包之后的文件名
+    },
+    ------------------------------------------------------------------------------------------------------------------
+
+十、多个配置文件的处理
+	使用 webpack 命令的时候默认使用的配置文件是 webpack.config.js ，
+	如果又多了一个配置文件  webpack.html.config.js ，想要使用这个配置文件，可以在 package.json 的scripts中配置如下
+
+	"start_html":"webpack --config webpack.html.config.js",  这里的 webpack.html.config.js 就是你要用的配置文件，
+	此时直接用 webpack 命令使用的是默认的 webpack.config.js ，要用 webpack.html.config.js 需用命令 npm run start_html 效果是和 webpack 一样的，只是启动项目的配置文件变了。
+
+十一、bable
+	
+
+
+
+
+	
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

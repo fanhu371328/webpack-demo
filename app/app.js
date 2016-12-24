@@ -1,0 +1,1 @@
+module.exports = '11我第一天学webpack,ohye111，一、用webpack-dev-server 开启服务,二、webpack-dev-server --port 3000更换默认端口，三、webpack-dev-server --port 3000 --hot --inline更换端口并开启自动刷新'
